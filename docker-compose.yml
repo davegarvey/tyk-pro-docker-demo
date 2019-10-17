@@ -7,6 +7,8 @@ services:
     - "5000:5000"
     networks:
     - tyk
+    volumes:
+    - "./confs/tyk_analytics.conf:/opt/tyk-dashboard/tyk_analytics.conf"
     depends_on:
     - tyk-redis
     - tyk-mongo
@@ -18,6 +20,24 @@ services:
     - tyk
     depends_on:
     - tyk-redis
+    - tyk-dashboard
+    volumes:
+    - "./certs:/opt/tyk-gateway/certs"
+    - "./confs/tyk.conf:/opt/tyk-gateway/tyk.conf"
+  tyk-gateway-http:
+    image: tykio/tyk-gateway:latest
+    ports:
+    - "8083:8080"
+    networks:
+    - tyk
+    depends_on:
+    - tyk-redis
+    - tyk-dashboard
+    environment:
+    - TYK_GW_HTTPSERVEROPTIONS_USESSL=false
+    volumes:
+    - "./certs:/opt/tyk-gateway/certs"
+    - "./confs/tyk.conf:/opt/tyk-gateway/tyk.conf"
   tyk-pump:
     image: tykio/tyk-pump-docker-pub:latest
     networks:
@@ -25,11 +45,10 @@ services:
     depends_on:
     - tyk-redis
     - tyk-mongo
-    - tyk-gateway
+    volumes:
+    - "./confs/pump.conf:/opt/tyk-pump/pump.conf"
   tyk-redis:
     image: redis
-    ports:
-    - "6379:6379"
     volumes:
     - redis-data:/data
     networks:
@@ -37,15 +56,60 @@ services:
   tyk-mongo:
     image: mongo:3.2
     command: ["mongod", "--smallfiles"]
-    ports:
-    - "27017:27017"
     volumes:
     - mongo-data:/data/db
     networks:
     - tyk
+  tyk-grpc-go-plugin-server:
+    image: davidgarvey/tyk-grpc-go-plugin-scratch
+    networks:
+        - tyk
+  tyk-mdcb:
+    image: tykio/tyk-mdcb-docker:latest
+    networks:
+      - tyk
+    volumes:
+      - "./confs/tyk_sink.conf:/opt/tyk-sink/tyk_sink.conf"
+  tyk-gateway-edge:
+    image: tykio/tyk-gateway:latest
+    ports:
+    - "8081:8080"
+    networks:
+    - tyk
+    depends_on:
+    - tyk-redis-edge
+    - tyk-mdcb
+    volumes:
+    - "./certs:/opt/tyk-gateway/certs"
+    - "./confs/tyk-edge.conf:/opt/tyk-gateway/tyk.conf"
+  tyk-redis-edge:
+    image: redis
+    volumes:
+    - redis-edge-data:/data
+    networks:
+    - tyk
+  httpbin:
+    image: kennethreitz/httpbin
+    networks:
+    - tyk
+    ports:
+      - 8082:80
+  tyk-identity-broker:
+    image: tykio/tyk-identity-broker:latest
+    networks:
+      - tyk
+    ports:
+      - 3010:3010
+    environment:
+      - REDIGOCLUSTER_SHARDCOUNT=256
+      - SESSION_SECRET=12345
+    volumes:
+      - "./confs/tib.conf:/opt/tyk-identity-broker/tib.conf"
+      - "./confs/profiles.json:/opt/tyk-identity-broker/profiles.json"
 
 volumes:
   redis-data:
+  redis-edge-data:
   mongo-data:
 
 networks:
