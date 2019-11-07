@@ -26,6 +26,7 @@ services:
     volumes:
     - "./certs:/opt/tyk-gateway/certs"
     - "./confs/tyk.conf:/opt/tyk-gateway/tyk.conf"
+    - "./js/tyk.js:/opt/tyk-gateway/js/tyk.js"
   tyk-gateway-http:
     image: tykio/tyk-gateway:latest
     ports:
@@ -40,6 +41,7 @@ services:
     volumes:
     - "./certs:/opt/tyk-gateway/certs"
     - "./confs/tyk.conf:/opt/tyk-gateway/tyk.conf"
+    - "./js/tyk.js:/opt/tyk-gateway/js/tyk.js"
   tyk-pump:
     image: tykio/tyk-pump-docker-pub:latest
     networks:
@@ -86,6 +88,7 @@ services:
     volumes:
     - "./certs:/opt/tyk-gateway/certs"
     - "./confs/tyk-edge.conf:/opt/tyk-gateway/tyk.conf"
+    - "./js/tyk.js:/opt/tyk-gateway/js/tyk.js"
   tyk-redis-edge:
     image: redis
     volumes:
